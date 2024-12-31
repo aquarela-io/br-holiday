@@ -1,0 +1,42 @@
+{
+  "name": "br-holiday",
+  "version": "1.0.0",
+  "description": "Utility library to check or get Brazilian holidays",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run build:js && npm run build:types && npm run build:static",
+    "build:js": "node esbuild.config.js",
+    "build:types": "tsc --emitDeclarationOnly",
+    "prepublishOnly": "npm run build",
+    "test": "vitest",
+    "prepare": "npm run build",
+    "semantic-release": "semantic-release",
+    "build:static": "node scripts/generate-static-data.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "author": "Diego Peixoto <contato@diegopeixoto.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aquarela-io/br-holiday.git"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^12.0.1",
+    "@types/jest": "^29.5.14",
+    "esbuild": "^0.24.2",
+    "semantic-release": "^24.2.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "ts-node": "^10.9.1",
+    "undici": "^6.6.2"
+  }
+}
