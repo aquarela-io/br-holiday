@@ -1,11 +1,11 @@
-# @aquarela/br-holiday
+# br-holiday
 
 Uma biblioteca utilitária para verificar e obter feriados brasileiros. Utiliza dados estáticos pré-compilados para anos anteriores e a [Brasil API](https://brasilapi.com.br/) para dados em tempo real.
 
 ## Instalação
 
 ```bash
-npm install @aquarela/br-holiday
+npm install br-holiday
 ```
 
 ## Uso
@@ -13,7 +13,7 @@ npm install @aquarela/br-holiday
 ### Importação
 
 ```typescript
-import { BRHoliday } from "@aquarela/br-holiday";
+import { BRHoliday } from "br-holiday";
 ```
 
 ### Exemplos Básicos
