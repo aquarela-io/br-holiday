@@ -34,7 +34,7 @@ interface HolidayHandler {
  * const holidays = new BRHoliday();
  *
  * // Live-only mode (always uses API)
- * const liveHolidays = new BRHoliday({ liveOnly: true });
+ * const liveHolidays = new BRHoliday({ skipStatic: true });
  * ```
  *
  * @implements {HolidayHandler}
@@ -43,60 +43,50 @@ export class BRHoliday implements HolidayHandler {
   /** Cached static holiday data shared across instances */
   private static staticData: Record<number, Holiday[]> | null = null;
   /** Whether to bypass static data and always use the API */
-  private liveOnly: boolean;
+  private skipStatic: boolean;
 
-              /**
+  /**
    * Static holiday data - defaults to test data, can be replaced during build
    * @internal
-  */
+   */
   private static staticHolidays: Record<number, Holiday[]> = {
-  "2024": [
-    {
-      "date": "2024-01-01",
-      "name": "Confraternização Universal",
-      "type": "national"
-    },
-    {
-      "date": "2024-02-13",
-      "name": "Carnaval",
-      "type": "national"
-    },
-    {
-      "date": "2024-03-29",
-      "name": "Sexta-feira Santa",
-      "type": "national"
-    },
-    {
-      "date": "2024-04-21",
-      "name": "Tiradentes",
-      "type": "national"
-    },
-    {
-      "date": "2024-05-01",
-      "name": "Dia do Trabalho",
-      "type": "national"
-    }
-  ]
-};
-
-
-
-
-
-
-
-
-
-
+    "2024": [
+      {
+        date: "2024-01-01",
+        name: "Confraternização Universal",
+        type: "national",
+      },
+      {
+        date: "2024-02-13",
+        name: "Carnaval",
+        type: "national",
+      },
+      {
+        date: "2024-03-29",
+        name: "Sexta-feira Santa",
+        type: "national",
+      },
+      {
+        date: "2024-04-21",
+        name: "Tiradentes",
+        type: "national",
+      },
+      {
+        date: "2024-05-01",
+        name: "Dia do Trabalho",
+        type: "national",
+      },
+    ],
+  };
 
   /**
    * Creates a new BRHoliday instance.
    *
    * @param options - Configuration options
-   * @param options.liveOnly - If true, always uses the API instead of static data
+   * @param options.skipStatic - If true, always uses the API instead of static data
    */
-  constructor(options?: { liveOnly?: boolean }) {
-    this.liveOnly = options?.liveOnly ?? false;
+  constructor(options?: { skipStatic?: boolean }) {
+    this.skipStatic = options?.skipStatic ?? false;
   }
 
   /**
