@@ -12,7 +12,7 @@
     "build:static": "node scripts/generate-static-data.js",
     "restore:static": "node scripts/restore-test-data.js",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && vitest && npm run restore:static",
+    "test": "npm run build && vitest run && npm run restore:static",
     "test:memory": "node --expose-gc scripts/test-memory.js",
     "prepare": "npm run build",
     "semantic-release": "semantic-release"

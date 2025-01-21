@@ -45,7 +45,7 @@ console.log(holidayList);
 
 ```typescript
 // Inicialização ignorando dados estáticos
-const liveHolidays = new BRHoliday({ liveOnly: true });
+const liveHolidays = new BRHoliday({ skipStatic: true });
 
 // Sempre fará requisições à API
 const holidays = await liveHolidays.getHolidays(2024);
@@ -58,10 +58,10 @@ const holidays = await liveHolidays.getHolidays(2024);
 #### Construtor
 
 ```typescript
-new BRHoliday(options?: { liveOnly?: boolean })
+new BRHoliday(options?: { skipStatic?: boolean })
 ```
 
-- `options.liveOnly`: Se `true`, ignora dados estáticos e sempre usa a API (padrão: `false`)
+- `options.skipStatic`: Se `true`, ignora dados estáticos e sempre usa a API (padrão: `false`)
 
 #### Métodos
 
@@ -89,6 +89,16 @@ type Holiday = {
   type: string; // Tipo do feriado (ex: 'national')
 };
 ```
+
+## Scripts
+
+A biblioteca inclui vários scripts úteis para desenvolvimento:
+
+- `npm run build`: Compila o código e gera dados estáticos
+- `npm run build:static`: Gera dados estáticos dos feriados (±2 anos do ano atual)
+- `npm run restore:static`: Restaura dados de teste para desenvolvimento
+- `npm test`: Executa os testes e restaura dados de teste
+- `npm run test:memory`: Executa testes de vazamento de memória
 
 ## Licença
 
