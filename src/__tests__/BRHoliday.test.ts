@@ -19,7 +19,7 @@ describe("BRHoliday", () => {
     let brHoliday: BRHoliday;
 
     beforeEach(() => {
-      brHoliday = new BRHoliday({ liveOnly: true });
+      brHoliday = new BRHoliday({ skipStatic: true });
       global.fetch = vi.fn();
     });
 
@@ -82,7 +82,7 @@ describe("BRHoliday", () => {
         json: () => Promise.resolve(mockHolidays),
       });
 
-      const holidays = await brHoliday.getHolidays(2024);
+      const holidays = await brHoliday.getHolidays(2032);
 
       expect(global.fetch).toHaveBeenCalled();
       expect(holidays).toEqual(mockHolidays);

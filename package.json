@@ -6,14 +6,16 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npm run build:js && npm run build:types && npm run build:static",
+    "build": "npm run build:static && npm run build:js && npm run build:types",
     "build:js": "node esbuild.config.js",
     "build:types": "tsc --emitDeclarationOnly",
+    "build:static": "node scripts/generate-static-data.js",
+    "restore:static": "node scripts/restore-test-data.js",
     "prepublishOnly": "npm run build",
-    "test": "vitest",
+    "test": "npm run build && vitest run && npm run restore:static",
+    "test:memory": "node --expose-gc scripts/test-memory.js",
     "prepare": "npm run build",
-    "semantic-release": "semantic-release",
-    "build:static": "node scripts/generate-static-data.js"
+    "semantic-release": "semantic-release"
   },
   "files": [
     "dist",
