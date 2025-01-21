@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/aquarela-io/br-holiday/compare/v1.1.0...v1.2.0) (2025-01-21)
+
+
+### Features
+
+* fix memory leak update static holiday data generation and restore test data ([b360ebb](https://github.com/aquarela-io/br-holiday/commit/b360ebb86ba9b8feab42f2b7f7fafb246556f8e2))
+
 # [1.1.0](https://github.com/aquarela-io/br-holiday/compare/v1.0.0...v1.1.0) (2024-12-31)
 
 
