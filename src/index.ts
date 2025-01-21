@@ -98,7 +98,7 @@ export class BRHoliday implements HolidayHandler {
    * @returns Promise resolving to an array of holidays
    */
   async getHolidays(year: number): Promise<Holiday[]> {
-    if (BRHoliday.staticHolidays[year]) {
+    if (!this.skipStatic && BRHoliday.staticHolidays[year]) {
       return BRHoliday.staticHolidays[year];
     }
 

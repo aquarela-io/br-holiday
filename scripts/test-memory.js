@@ -1,13 +1,12 @@
 /**
  * scripts/test-memory.js
  *
- * Teste detalhado para verificar vazamentos de memória
- * na classe BRHoliday, tanto no modo skipStatic
-
- * quanto com fallback estático.
+ * Detailed test to verify memory leaks
+ * in the BRHoliday class, both in skipStatic mode
+ * and with static fallback.
  */
 
-// Ajuste o caminho para importar corretamente a classe:
+// Adjust the path to correctly import the class:
 const { BRHoliday } = require("../dist");
 
 function formatMemoryUsage() {
@@ -40,26 +39,24 @@ function calculateDelta(before, after) {
 }
 
 /**
- * Executa várias chamadas de getHolidays/isHoliday em batches,
- * com checkpoints de memória entre cada batch.
+ * Executes multiple getHolidays/isHoliday calls in batches,
+ * with memory checkpoints between each batch.
  *
  * @param {boolean} skipStatic
-
  * @returns {Promise<void>}
  */
 async function runMemoryTest(skipStatic) {
-  console.log(`\n=== Teste com skipStatic
- = ${skipStatic} ===`);
+  console.log(`\n=== Test with skipStatic = ${skipStatic} ===`);
 
-  // Força GC inicial
+  // Force initial GC
   if (global.gc) {
     global.gc();
   }
 
   const initialMemory = getMemoryValues();
-  console.log("Memória inicial:", formatMemoryUsage());
+  console.log("Initial memory:", formatMemoryUsage());
 
-  // Aumentamos para ter uma visão melhor de possíveis leaks
+  // Increase to better see possible leaks
   const TOTAL_ITERATIONS = 1000;
   const BATCH_SIZE = 200;
   const brHoliday = new BRHoliday({ skipStatic });
@@ -68,7 +65,7 @@ async function runMemoryTest(skipStatic) {
     const batchReferences = [];
 
     console.log(
-      `\nExecutando batch ${batch + 1}/${TOTAL_ITERATIONS / BATCH_SIZE}...`
+      `\nExecuting batch ${batch + 1}/${TOTAL_ITERATIONS / BATCH_SIZE}...`
     );
 
     for (let i = 0; i < BATCH_SIZE; i++) {
@@ -83,7 +80,7 @@ async function runMemoryTest(skipStatic) {
       }
     }
 
-    // Força GC após cada batch
+    // Force GC after each batch
     if (global.gc) {
       global.gc();
     }
@@ -91,14 +88,14 @@ async function runMemoryTest(skipStatic) {
     const currentMemory = getMemoryValues();
     const delta = calculateDelta(initialMemory, currentMemory);
 
-    console.log(`Memória após batch ${batch + 1}:`, formatMemoryUsage());
-    console.log(`Delta desde o início (MB):`, delta);
+    console.log(`Memory after batch ${batch + 1}:`, formatMemoryUsage());
+    console.log(`Delta since start (MB):`, delta);
 
-    // Limpa referências do batch
+    // Clear batch references
     batchReferences.length = 0;
   }
 
-  // Memória final após todos os batches
+  // Final memory after all batches
   if (global.gc) {
     global.gc();
   }
@@ -106,19 +103,19 @@ async function runMemoryTest(skipStatic) {
   const finalMemory = getMemoryValues();
   const totalDelta = calculateDelta(initialMemory, finalMemory);
 
-  console.log("\nResultado final:");
-  console.log("Memória final:", formatMemoryUsage());
-  console.log("Delta total (MB):", totalDelta);
+  console.log("\nFinal result:");
+  console.log("Final memory:", formatMemoryUsage());
+  console.log("Total Delta (MB):", totalDelta);
 }
 
 (async () => {
-  console.log("Iniciando teste de memória detalhado...\n");
+  console.log("Starting detailed memory test...\n");
 
-  // Teste 1: Somente API
+  // Test 1: Only API
   await runMemoryTest(true);
 
-  // Teste 2: Usando dados estáticos + fallback
+  // Test 2: Using static data + fallback
   await runMemoryTest(false);
 
-  console.log("\n*** Teste finalizado ***");
+  console.log("\n*** Test completed ***");
 })();
