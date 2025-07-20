@@ -91,6 +91,20 @@ const CACHE_TTL_FUTURE = 1000 * 60 * 60 * 24 * 30; // 30 days for future years
 const CACHE_TTL_CURRENT = 1000 * 60 * 60 * 24 * 7; // 7 days for current year
 // Past years are cached indefinitely since they won't change
 
+// Cache size limits
+const CACHE_MAX_SIZE = 100;
+const CACHE_CLEANUP_TARGET = 80;
+const CACHE_IMMEDIATE_CLEANUP_THRESHOLD = 50;
+const CACHE_IMMEDIATE_CLEANUP_TARGET = 30;
+
+// Time intervals
+const CACHE_CLEANUP_INTERVAL = 1000 * 60 * 60 * 24; // 24 hours
+
+// Date handling
+const YEAR_PRESERVATION_WINDOW = 2; // Years to preserve around current year
+const YEAR_START_INDEX = 0;
+const YEAR_LENGTH = 4;
+
 // Clean up old cache entries periodically
 let cacheCleanupTimer: NodeJS.Timeout | null = null;
 
@@ -109,12 +123,42 @@ function getCacheTTL(year: number): number | null {
   }
 }
 
+/**
+ * Reduces cache size by removing oldest entries
+ * @param maxSize - Maximum allowed cache size
+ * @param targetSize - Target size after cleanup
+ * @param preserveRecentYears - If true, preserves entries within YEAR_PRESERVATION_WINDOW years of current year
+ */
+function reduceCacheSize(maxSize: number, targetSize: number, preserveRecentYears: boolean = false) {
+  if (API_CACHE.size <= maxSize) {
+    return;
+  }
+
+  const entries = Array.from(API_CACHE.entries());
+  
+  // Sort by timestamp (oldest first)
+  entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+  
+  while (API_CACHE.size > targetSize && entries.length > 0) {
+    const [year] = entries.shift()!;
+    
+    if (preserveRecentYears) {
+      const currentYear = new Date().getFullYear();
+      // Only remove if it's not a commonly used year
+      if (Math.abs(year - currentYear) > YEAR_PRESERVATION_WINDOW) {
+        API_CACHE.delete(year);
+      }
+    } else {
+      API_CACHE.delete(year);
+    }
+  }
+}
+
 function startCacheCleanup() {
   if (!cacheCleanupTimer) {
     // Run cleanup every 24 hours
     cacheCleanupTimer = setInterval(() => {
       const now = Date.now();
-      const currentYear = new Date().getFullYear();
       
       for (const [year, entry] of API_CACHE.entries()) {
         const ttl = getCacheTTL(year);
@@ -125,24 +169,9 @@ function startCacheCleanup() {
         }
       }
       
-      // Also implement a max cache size to prevent unbounded growth
-      // Keep most recent 100 years cached
-      if (API_CACHE.size > 100) {
-        const entries = Array.from(API_CACHE.entries());
-        // Sort by year (oldest first)
-        entries.sort((a, b) => a[0] - b[0]);
-        
-        // Remove oldest entries until we're under 80
-        while (API_CACHE.size > 80) {
-          const [oldestYear] = entries.shift()!;
-          // Only remove if it's not a commonly used year
-          const currentYear = new Date().getFullYear();
-          if (Math.abs(oldestYear - currentYear) > 5) {
-            API_CACHE.delete(oldestYear);
-          }
-        }
-      }
-    }, 1000 * 60 * 60 * 24); // Run every 24 hours
+      // Reduce cache size if needed, preserving recent years
+      reduceCacheSize(CACHE_MAX_SIZE, CACHE_CLEANUP_TARGET, true);
+    }, CACHE_CLEANUP_INTERVAL); // Run every 24 hours
     
     // Allow process to exit even if timer is active
     if (cacheCleanupTimer.unref) {
@@ -155,7 +184,7 @@ function startCacheCleanup() {
  * Brazilian Holiday handler that provides methods to check and retrieve holiday information.
  *
  * Features:
- * - Static data fallback for common years (current year ±2 years)
+ * - Static data fallback for recent years (varies based on build)
  * - Live API integration with Brasil API (https://brasilapi.com.br)
  * - Date validation and error handling
  * - Memory-efficient caching with TTL
@@ -234,15 +263,7 @@ export class BRHoliday implements HolidayHandler {
       });
       
       // Limit cache size to prevent unbounded growth
-      if (API_CACHE.size > 50) {
-        // Remove oldest entries
-        const entries = Array.from(API_CACHE.entries());
-        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-        
-        while (API_CACHE.size > 30) {
-          API_CACHE.delete(entries.shift()![0]);
-        }
-      }
+      reduceCacheSize(CACHE_IMMEDIATE_CLEANUP_THRESHOLD, CACHE_IMMEDIATE_CLEANUP_TARGET);
       
       return data;
     } catch (error) {
@@ -265,7 +286,7 @@ export class BRHoliday implements HolidayHandler {
       throw new Error("Invalid date format. Use YYYY-MM-DD");
     }
 
-    const year = parseInt(date.substring(0, 4), 10);
+    const year = parseInt(date.substring(YEAR_START_INDEX, YEAR_LENGTH), 10);
     
     // Optimized check for static data
     if (!this.skipStatic && STATIC_HOLIDAYS[year]) {
