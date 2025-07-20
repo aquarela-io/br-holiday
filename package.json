@@ -1,0 +1,38 @@
+{
+  "name": "br-holiday",
+  "version": "2.0.0",
+  "description": "A lightweight TypeScript library for checking Brazilian holidays",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.esm.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:static && npm run build:js && npm run build:types",
+    "build:js": "node esbuild.config.js",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:static": "node scripts/generate-static.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "author": "Diego Peixoto <contato@diegopeixoto.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aquarela-io/br-holiday.git"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.2",
+    "undici": "^6.6.2"
+  }
+}
