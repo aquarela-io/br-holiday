@@ -1,9 +1,8 @@
 /**
  * scripts/test-memory.js
  *
- * Detailed test to verify memory leaks
- * in the BRHoliday class, both in skipStatic mode
- * and with static fallback.
+ * Comprehensive memory leak tests for the BRHoliday class.
+ * Tests instance creation/destruction, cache behavior, and API calls.
  */
 
 // Adjust the path to correctly import the class:
@@ -39,15 +38,12 @@ function calculateDelta(before, after) {
 }
 
 /**
- * Executes multiple getHolidays/isHoliday calls in batches,
- * with memory checkpoints between each batch.
- *
- * @param {boolean} skipStatic
- * @returns {Promise<void>}
+ * Test 1: Instance creation and destruction
+ * Creates and destroys multiple instances to check for leaks
  */
-async function runMemoryTest(skipStatic) {
-  console.log(`\n=== Test with skipStatic = ${skipStatic} ===`);
-
+async function testInstanceCreation() {
+  console.log("\n=== Test 1: Instance Creation/Destruction ===");
+  
   // Force initial GC
   if (global.gc) {
     global.gc();
@@ -56,46 +52,19 @@ async function runMemoryTest(skipStatic) {
   const initialMemory = getMemoryValues();
   console.log("Initial memory:", formatMemoryUsage());
 
-  // Increase to better see possible leaks
-  const TOTAL_ITERATIONS = 1000;
-  const BATCH_SIZE = 200;
-  const brHoliday = new BRHoliday({ skipStatic });
+  const ITERATIONS = 10000;
 
-  for (let batch = 0; batch < TOTAL_ITERATIONS / BATCH_SIZE; batch++) {
-    const batchReferences = [];
-
-    console.log(
-      `\nExecuting batch ${batch + 1}/${TOTAL_ITERATIONS / BATCH_SIZE}...`
-    );
-
-    for (let i = 0; i < BATCH_SIZE; i++) {
-      const year = 2022 + Math.floor(Math.random() * 5);
-      try {
-        const holidays = await brHoliday.getHolidays(year);
-        batchReferences.push(holidays);
-        const isHoliday = await brHoliday.isHoliday(`${year}-12-25`);
-        batchReferences.push(isHoliday);
-      } catch (error) {
-        batchReferences.push(error.message);
-      }
+  for (let i = 0; i < ITERATIONS; i++) {
+    // Create instance, use it, then let it be garbage collected
+    const brHoliday = new BRHoliday({ skipStatic: i % 2 === 0 });
+    await brHoliday.isHoliday("2024-12-25");
+    
+    if (i % 1000 === 0) {
+      console.log(`Created ${i} instances...`);
     }
-
-    // Force GC after each batch
-    if (global.gc) {
-      global.gc();
-    }
-
-    const currentMemory = getMemoryValues();
-    const delta = calculateDelta(initialMemory, currentMemory);
-
-    console.log(`Memory after batch ${batch + 1}:`, formatMemoryUsage());
-    console.log(`Delta since start (MB):`, delta);
-
-    // Clear batch references
-    batchReferences.length = 0;
   }
 
-  // Final memory after all batches
+  // Force GC after all instances
   if (global.gc) {
     global.gc();
   }
@@ -106,16 +75,184 @@ async function runMemoryTest(skipStatic) {
   console.log("\nFinal result:");
   console.log("Final memory:", formatMemoryUsage());
   console.log("Total Delta (MB):", totalDelta);
+  
+  // Check if memory increased significantly
+  if (parseFloat(totalDelta.heapUsed) > 10) {
+    console.error("⚠️  WARNING: Significant memory increase detected!");
+  } else {
+    console.log("✅ Memory usage stable");
+  }
 }
 
+/**
+ * Test 2: API calls with caching
+ * Tests memory behavior with repeated API calls
+ */
+async function testApiCallsWithCache(skipStatic) {
+  console.log(`\n=== Test 2: API Calls (skipStatic=${skipStatic}) ===`);
+
+  // Force initial GC
+  if (global.gc) {
+    global.gc();
+  }
+
+  const initialMemory = getMemoryValues();
+  console.log("Initial memory:", formatMemoryUsage());
+
+  const brHoliday = new BRHoliday({ skipStatic });
+  const ITERATIONS = 5000;
+  const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029];
+
+  for (let i = 0; i < ITERATIONS; i++) {
+    const year = years[i % years.length];
+    try {
+      await brHoliday.getHolidays(year);
+      await brHoliday.isHoliday(`${year}-12-25`);
+    } catch (error) {
+      // Ignore API errors for testing
+    }
+    
+    if (i % 500 === 0 && i > 0) {
+      if (global.gc) {
+        global.gc();
+      }
+      const currentMemory = getMemoryValues();
+      const delta = calculateDelta(initialMemory, currentMemory);
+      console.log(`After ${i} iterations - Delta: ${delta.heapUsed} MB`);
+    }
+  }
+
+  // Force final GC
+  if (global.gc) {
+    global.gc();
+  }
+
+  const finalMemory = getMemoryValues();
+  const totalDelta = calculateDelta(initialMemory, finalMemory);
+
+  console.log("\nFinal result:");
+  console.log("Final memory:", formatMemoryUsage());
+  console.log("Total Delta (MB):", totalDelta);
+  
+  // Check if memory increased significantly
+  if (parseFloat(totalDelta.heapUsed) > 20) {
+    console.error("⚠️  WARNING: Significant memory increase detected!");
+  } else {
+    console.log("✅ Memory usage stable");
+  }
+}
+
+/**
+ * Test 3: Stress test with parallel operations
+ * Simulates real-world usage with concurrent operations
+ */
+async function stressTest() {
+  console.log("\n=== Test 3: Stress Test with Parallel Operations ===");
+
+  // Force initial GC
+  if (global.gc) {
+    global.gc();
+  }
+
+  const initialMemory = getMemoryValues();
+  console.log("Initial memory:", formatMemoryUsage());
+
+  const brHoliday = new BRHoliday();
+  const BATCHES = 50;
+  const BATCH_SIZE = 100;
+
+  for (let batch = 0; batch < BATCHES; batch++) {
+    // Create parallel operations
+    const promises = [];
+    
+    for (let i = 0; i < BATCH_SIZE; i++) {
+      const year = 2020 + (Math.random() * 10 | 0);
+      const month = (Math.random() * 12 + 1 | 0).toString().padStart(2, '0');
+      const day = (Math.random() * 28 + 1 | 0).toString().padStart(2, '0');
+      
+      promises.push(
+        brHoliday.isHoliday(`${year}-${month}-${day}`).catch(() => false)
+      );
+      
+      if (i % 10 === 0) {
+        promises.push(
+          brHoliday.getHolidays(year).catch(() => [])
+        );
+      }
+    }
+    
+    await Promise.all(promises);
+    
+    if (batch % 10 === 0) {
+      if (global.gc) {
+        global.gc();
+      }
+      const currentMemory = getMemoryValues();
+      const delta = calculateDelta(initialMemory, currentMemory);
+      console.log(`Batch ${batch}/${BATCHES} - Delta: ${delta.heapUsed} MB`);
+    }
+  }
+
+  // Force final GC
+  if (global.gc) {
+    global.gc();
+  }
+
+  const finalMemory = getMemoryValues();
+  const totalDelta = calculateDelta(initialMemory, finalMemory);
+
+  console.log("\nFinal result:");
+  console.log("Final memory:", formatMemoryUsage());
+  console.log("Total Delta (MB):", totalDelta);
+  
+  // Check if memory increased significantly
+  if (parseFloat(totalDelta.heapUsed) > 30) {
+    console.error("⚠️  WARNING: Significant memory increase detected!");
+  } else {
+    console.log("✅ Memory usage stable");
+  }
+}
+
+// Main test runner
 (async () => {
-  console.log("Starting detailed memory test...\n");
-
-  // Test 1: Only API
-  await runMemoryTest(true);
-
-  // Test 2: Using static data + fallback
-  await runMemoryTest(false);
-
-  console.log("\n*** Test completed ***");
+  console.log("Starting comprehensive memory tests...");
+  console.log("Node version:", process.version);
+  console.log("Platform:", process.platform);
+  console.log("Architecture:", process.arch);
+  
+  try {
+    // Test 1: Instance creation
+    await testInstanceCreation();
+    
+    // Wait a bit between tests
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 2: API calls with static data
+    await testApiCallsWithCache(false);
+    
+    // Wait a bit between tests
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 2: API calls without static data
+    await testApiCallsWithCache(true);
+    
+    // Wait a bit between tests
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 3: Stress test
+    await stressTest();
+    
+    console.log("\n=== All tests completed ===");
+    
+    // Final cleanup
+    if (global.gc) {
+      global.gc();
+    }
+    
+    console.log("\nFinal process memory:", formatMemoryUsage());
+    
+  } catch (error) {
+    console.error("Test error:", error);
+    process.exit(1);
+  }
 })();
