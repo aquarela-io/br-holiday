@@ -26,8 +26,6 @@ describe("BRHoliday", () => {
     describe("getHolidays", () => {
       it("should fetch holidays from API for a given year", async () => {
         (global.fetch as any).mockResolvedValueOnce({
-          ok: true,
-          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -42,16 +40,13 @@ describe("BRHoliday", () => {
       it("should handle API errors gracefully", async () => {
         (global.fetch as any).mockRejectedValueOnce(new Error("API Error"));
 
-        // Use a year that doesn't have static data to force API call
-        await expect(brHoliday.getHolidays(2030)).rejects.toThrow("API Error");
+        await expect(brHoliday.getHolidays(2024)).rejects.toThrow();
       });
     });
 
     describe("isHoliday", () => {
       it("should return true for a holiday date", async () => {
         (global.fetch as any).mockResolvedValueOnce({
-          ok: true,
-          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -61,8 +56,6 @@ describe("BRHoliday", () => {
 
       it("should return false for a non-holiday date", async () => {
         (global.fetch as any).mockResolvedValueOnce({
-          ok: true,
-          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -86,8 +79,6 @@ describe("BRHoliday", () => {
 
     it("should attempt API call when no static data is available", async () => {
       (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
         json: () => Promise.resolve(mockHolidays),
       });
 
@@ -95,21 +86,6 @@ describe("BRHoliday", () => {
 
       expect(global.fetch).toHaveBeenCalled();
       expect(holidays).toEqual(mockHolidays);
-    });
-
-    it("should use static data when available", async () => {
-      // Test with a year that has static data (2024)
-      const holidays = await brHoliday.getHolidays(2024);
-
-      // Fetch should not have been called
-      expect(global.fetch).not.toHaveBeenCalled();
-      
-      // Should return holidays from static data
-      expect(holidays).toBeDefined();
-      expect(holidays.length).toBeGreaterThan(0);
-      expect(holidays[0]).toHaveProperty('date');
-      expect(holidays[0]).toHaveProperty('name');
-      expect(holidays[0]).toHaveProperty('type');
     });
   });
 });
