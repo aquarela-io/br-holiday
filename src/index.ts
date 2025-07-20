@@ -81,6 +81,8 @@ const STATIC_HOLIDAYS: Readonly<Record<number, Holiday[]>> = Object.freeze({
 });
 
 // Global cache with TTL to prevent unbounded growth
+// Uses LRU (Least Recently Used) strategy - Map maintains insertion order,
+// so oldest entries are at the beginning when iterating
 interface CacheEntry {
   data: Holiday[];
   timestamp: number;
@@ -134,16 +136,15 @@ function reduceCacheSize(maxSize: number, targetSize: number, preserveRecentYear
     return;
   }
 
-  const entries = Array.from(API_CACHE.entries());
+
+  const currentYear = preserveRecentYears ? new Date().getFullYear() : 0;
   
-  // Sort by timestamp (oldest first)
-  entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-  
-  while (API_CACHE.size > targetSize && entries.length > 0) {
-    const [year] = entries.shift()!;
+  for (const [year, entry] of API_CACHE) {
+    if (API_CACHE.size <= targetSize) {
+      break;
+    }
     
     if (preserveRecentYears) {
-      const currentYear = new Date().getFullYear();
       // Only remove if it's not a commonly used year
       if (Math.abs(year - currentYear) > YEAR_PRESERVATION_WINDOW) {
         API_CACHE.delete(year);
@@ -240,6 +241,9 @@ export class BRHoliday implements HolidayHandler {
       // If TTL is null (past years), always return from cache
       // Otherwise check if cache is still valid
       if (ttl === null || Date.now() - cached.timestamp < ttl) {
+        // Move to end of Map to maintain LRU order
+        API_CACHE.delete(year);
+        API_CACHE.set(year, cached);
         return [...cached.data];
       }
     }
@@ -256,7 +260,12 @@ export class BRHoliday implements HolidayHandler {
       
       const data = await response.json();
       
-      // Cache the result
+      // If entry exists, delete it first to maintain insertion order
+      if (API_CACHE.has(year)) {
+        API_CACHE.delete(year);
+      }
+      
+      // Cache the result (will be added at the end)
       API_CACHE.set(year, {
         data,
         timestamp: Date.now()

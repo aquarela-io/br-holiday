@@ -26,6 +26,8 @@ describe("BRHoliday", () => {
     describe("getHolidays", () => {
       it("should fetch holidays from API for a given year", async () => {
         (global.fetch as any).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -40,13 +42,16 @@ describe("BRHoliday", () => {
       it("should handle API errors gracefully", async () => {
         (global.fetch as any).mockRejectedValueOnce(new Error("API Error"));
 
-        await expect(brHoliday.getHolidays(2024)).rejects.toThrow();
+        // Use a year far in the future that won't have static data
+        await expect(brHoliday.getHolidays(2050)).rejects.toThrow("API Error");
       });
     });
 
     describe("isHoliday", () => {
       it("should return true for a holiday date", async () => {
         (global.fetch as any).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -56,6 +61,8 @@ describe("BRHoliday", () => {
 
       it("should return false for a non-holiday date", async () => {
         (global.fetch as any).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
           json: () => Promise.resolve(mockHolidays),
         });
 
@@ -79,6 +86,8 @@ describe("BRHoliday", () => {
 
     it("should attempt API call when no static data is available", async () => {
       (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         json: () => Promise.resolve(mockHolidays),
       });
 
